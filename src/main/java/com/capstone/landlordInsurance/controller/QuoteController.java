@@ -2,7 +2,9 @@ package com.capstone.landlordInsurance.controller;
 
 import com.capstone.landlordInsurance.dto.PremiumResponseDto;
 import com.capstone.landlordInsurance.dto.QuoteRequestDto;
+import com.capstone.landlordInsurance.entity.Premium;
 import com.capstone.landlordInsurance.entity.Quote;
+import com.capstone.landlordInsurance.repository.PremiumRepository;
 import com.capstone.landlordInsurance.service.QuoteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/quote")
@@ -17,6 +20,9 @@ public class QuoteController {
 
     @Autowired
     private QuoteService quoteService;
+
+    @Autowired
+    private PremiumRepository premiumRepository;
 
     @PostMapping
     public PremiumResponseDto createQuote(@RequestBody QuoteRequestDto quoteRequestDTO) {
@@ -29,11 +35,14 @@ public class QuoteController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Quote> getQuoteById(@PathVariable Long id) {
-        Quote quote = quoteService.getQuoteById(id);
-        if (quote != null){
-            return new ResponseEntity<>(quote, HttpStatus.OK);
+    public ResponseEntity<PremiumResponseDto> getQuoteById(@PathVariable Long id) {
+        Optional<Premium> premium = premiumRepository.findByQuoteId(id);
+//        Quote quote = quoteService.getQuoteById(id);
+        if (premium.isPresent()) {
+            PremiumResponseDto responseDto = quoteService.mapToPremiumDto(premium.get());
+            return new ResponseEntity<>(responseDto, HttpStatus.OK);
         }
+
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 

@@ -37,6 +37,9 @@ public class QuoteService {
     @Autowired
     private CalculatePremiumService premiumService;
 
+    @Autowired
+    private PremiumRepository premiumRepository;
+
     @Transactional
     public PremiumResponseDto createQuote(QuoteRequestDto quoteRequestDTO) {
         // Create Quote Entity and set values from DTO
@@ -94,7 +97,45 @@ public class QuoteService {
         Quote savedQuote = quoteRepository.save(quote);
         responseDto.setQuoteId(savedQuote.getQuoteId());
         responseDto.setTime(savedQuote.getCreatedAt());
+
+        Premium premium = mapToPremiumEntity(responseDto);
+        premiumRepository.save(premium);
+
         return responseDto;
+    }
+
+    private Premium mapToPremiumEntity(PremiumResponseDto responseDto) {
+        Premium premium = new Premium();
+        premium.setQuoteId(responseDto.getQuoteId());
+        premium.setClientName(responseDto.getClientName());
+        premium.setClientEmail(responseDto.getClientEmail());
+        premium.setCoverageType(responseDto.getCoverageType());
+        premium.setBasePremium(responseDto.getBasePremium());
+        premium.setCoverageLimit(responseDto.getCoverageLimit());
+        premium.setDeductible(responseDto.getDeductible());
+        premium.setPropertyValue(responseDto.getPropertyValue());
+        premium.setCalculatedPremium(responseDto.getCalculatedPremium());
+        premium.setDiscount(responseDto.getDiscount());
+        premium.setTax(responseDto.getTax());
+        premium.setTime(responseDto.getTime());
+        return premium;
+    }
+
+    public PremiumResponseDto mapToPremiumDto(Premium premium) {
+        PremiumResponseDto dto = new PremiumResponseDto();
+        dto.setQuoteId(premium.getQuoteId());
+        dto.setClientName(premium.getClientName());
+        dto.setClientEmail(premium.getClientEmail());
+        dto.setCoverageType(premium.getCoverageType());
+        dto.setBasePremium(premium.getBasePremium());
+        dto.setCoverageLimit(premium.getCoverageLimit());
+        dto.setDeductible(premium.getDeductible());
+        dto.setPropertyValue(premium.getPropertyValue());
+        dto.setCalculatedPremium(premium.getCalculatedPremium());
+        dto.setDiscount(premium.getDiscount());
+        dto.setTax(premium.getTax());
+        dto.setTime(premium.getTime());
+        return dto;
     }
 
     public List<Quote> getAllQuotes() {
