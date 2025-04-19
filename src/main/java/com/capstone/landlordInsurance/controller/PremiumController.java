@@ -1,5 +1,6 @@
 package com.capstone.landlordInsurance.controller;
 
+import com.capstone.landlordInsurance.dto.PremiumResponseDto;
 import com.capstone.landlordInsurance.dto.QuoteRequestDto;
 import com.capstone.landlordInsurance.service.CalculatePremiumService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,17 +27,8 @@ public class PremiumController {
     public ResponseEntity<?> calculatePremium(
             @RequestBody QuoteRequestDto request) {
 
-        // Validate request
-//        if (request.getArea() <= 0) {
-//            return ResponseEntity.badRequest().body(
-//                    new PremiumResponse("Area must be positive", 0));
-//        }
+        PremiumResponseDto responseDto = premiumService.getPremium(request);
 
-        // Calculate premium
-        double premium = premiumService.getPremium(request);
-
-//        return ResponseEntity.ok(
-//                new PremiumResponse("Premium calculated successfully", premium));
-        return new ResponseEntity<>(premium, HttpStatus.OK);
+        return new ResponseEntity<>(responseDto, HttpStatus.OK);
     }
 }

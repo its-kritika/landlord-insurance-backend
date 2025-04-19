@@ -21,6 +21,8 @@ public class QuoteRequestDto {
     private Double propertyValue;
     private Integer yearBuilt;
     private Double area;
+    private Double deductibleValue;
+    private Double coverageLimit;
 
     // Coverage Type (you can set this as a string or enum)
     private String coverageType;  // Example: "FIRE_WATER", "THEFT", "LOSS_OF_INCOME", "ALL_IN_ONE"

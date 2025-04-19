@@ -26,6 +26,11 @@ public class Quote {
     private double propertyValue;
     private int yearBuilt;
     private double area;
+    private double deductibleValue;
+    private double coverageLimit;
+
+    @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'pending'")
+    private String status = "pending";
 
     private double calculatedPremium;
 
@@ -36,20 +41,20 @@ public class Quote {
     private String coverageType;
 
     @ManyToOne
-    @JoinColumn(name = "broker_id", nullable = false)
+    @JoinColumn(name = "broker_id", nullable = true)
     private Broker broker;
 
     @ManyToOne
     @JoinColumn(name = "client_id", nullable = false)
     private Client client;
 
-    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true)
     private FireWaterCov fireWaterCoverage;
 
-    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true)
     private VandalismTheftCov vandalismTheftCoverage;
 
-    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true)
     private LossOfIncomeCov lossOfIncomeCoverage;
 
 }
@@ -78,7 +83,9 @@ public class Quote {
 //        "securityFeatures": ["CCTV", "Gated Access", "Smart Lock"],
 //        "unitsRentedLastYear": 20,
 //        "vacantDaysLastYear": 120,
-//        "yearBuilt": 2014
+//        "yearBuilt": 2014,
+//        "deductibleValue": 200000,
+//        "coverageLimit" : 1500000
 //     }
 
 
@@ -98,7 +105,9 @@ public class Quote {
 //        "propertyValue": 2300000.5,
 //        "propertyZip": "211006",
 //        "proximityToFireStation": "bet48",
-//        "yearBuilt": 2014
+//        "yearBuilt": 2014,
+//        "deductibleValue": 200000,
+//        "coverageLimit" : 1500000
 //        }
 
 //update quote (where coverage is changed All-In-One to Loss Of Income)

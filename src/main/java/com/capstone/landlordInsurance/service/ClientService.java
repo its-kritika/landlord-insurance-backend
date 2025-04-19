@@ -69,19 +69,59 @@ public class ClientService {
     }
 
     // delete all quotes related to the client when client is deleted
+//    @Transactional
+//    public boolean deleteClientById(Long id) {
+//        Optional<Client> optionalClient = clientRepository.findById(id);
+//        if (optionalClient.isPresent()) {
+//            Client client = optionalClient.get();
+//
+//            List<Quote> quotes = quoteRepository.findByClient_ClientId(client.getClientId());
+////            for (Quote quote : quotes) {
+////                quote.setFireWaterCoverage(null);
+////                quote.setVandalismTheftCoverage(null);
+////                quote.setLossOfIncomeCoverage(null);
+////                quote.setBroker(null);  // unlink broker to avoid FK violation
+////            }
+//            quoteRepository.deleteAll(quotes);
+//
+//            clientRepository.deleteById(id);
+//            return true;
+//        }
+//        return false;
+//    }
+
     @Transactional
     public boolean deleteClientById(Long id) {
         Optional<Client> optionalClient = clientRepository.findById(id);
-        if (optionalClient.isPresent()) {
-            Client client = optionalClient.get();
-
-            List<Quote> quotes = quoteRepository.findByClient_ClientId(client.getClientId());
-            quoteRepository.deleteAll(quotes);
-
-            // delete client
-            clientRepository.deleteById(id);
-            return true;
+        if (optionalClient.isEmpty()) {
+            return false;
         }
-        return false;
+
+        Client client = optionalClient.get();
+
+        // Step 1: Fetch and delete all quotes associated with this client
+        List<Quote> quotes = quoteRepository.findByClient_ClientId(client.getClientId());
+        for (Quote quote : quotes) {
+            // Break circular references to avoid constraint issues
+            if (quote.getFireWaterCoverage() != null) {
+                quote.getFireWaterCoverage().setQuote(null);
+            }
+            if (quote.getVandalismTheftCoverage() != null) {
+                quote.getVandalismTheftCoverage().setQuote(null);
+            }
+            if (quote.getLossOfIncomeCoverage() != null) {
+                quote.getLossOfIncomeCoverage().setQuote(null);
+            }
+            quote.setClient(null);  // Break client reference
+            quote.setBroker(null);  // Break broker reference (optional safety)
+        }
+        quoteRepository.saveAll(quotes);
+        quoteRepository.deleteAll(quotes);
+
+        // Step 2: Delete the client
+        clientRepository.delete(client);
+
+        return true;
     }
+
 }

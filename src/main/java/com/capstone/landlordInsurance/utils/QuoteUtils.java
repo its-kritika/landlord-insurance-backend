@@ -17,6 +17,8 @@ public class QuoteUtils {
         if (updatedQuote.getPropertyValue() != null) existingQuote.setPropertyValue(updatedQuote.getPropertyValue());
         if (updatedQuote.getYearBuilt() != null) existingQuote.setYearBuilt(updatedQuote.getYearBuilt());
         if (updatedQuote.getArea() != null) existingQuote.setArea(updatedQuote.getArea());
+        if (updatedQuote.getCoverageLimit() != null) existingQuote.setCoverageLimit(updatedQuote.getCoverageLimit());
+        if (updatedQuote.getDeductibleValue() != null) existingQuote.setDeductibleValue(updatedQuote.getDeductibleValue());
     }
 
     public static void updateFireWaterCoverage(FireWaterCov fireWaterCov, QuoteRequestDto updatedQuote) {

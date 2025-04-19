@@ -1,5 +1,6 @@
 package com.capstone.landlordInsurance.controller;
 
+import com.capstone.landlordInsurance.dto.PremiumResponseDto;
 import com.capstone.landlordInsurance.dto.QuoteRequestDto;
 import com.capstone.landlordInsurance.entity.Quote;
 import com.capstone.landlordInsurance.service.QuoteService;
@@ -18,7 +19,7 @@ public class QuoteController {
     private QuoteService quoteService;
 
     @PostMapping
-    public Quote createQuote(@RequestBody QuoteRequestDto quoteRequestDTO) {
+    public PremiumResponseDto createQuote(@RequestBody QuoteRequestDto quoteRequestDTO) {
         return quoteService.createQuote(quoteRequestDTO);
     }
 
@@ -37,8 +38,8 @@ public class QuoteController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Quote> updateQuote(@PathVariable Long id, @RequestBody QuoteRequestDto updatedQuote) {
-        Quote quote = quoteService.updateQuoteById(id, updatedQuote);
+    public ResponseEntity<PremiumResponseDto> updateQuote(@PathVariable Long id, @RequestBody QuoteRequestDto updatedQuote) {
+        PremiumResponseDto quote = quoteService.updateQuoteById(id, updatedQuote);
         if (quote != null){
             return new ResponseEntity<>(quote, HttpStatus.OK);
         }

@@ -1,5 +1,6 @@
 package com.capstone.landlordInsurance.service;
 
+import com.capstone.landlordInsurance.dto.PremiumResponseDto;
 import com.capstone.landlordInsurance.dto.QuoteRequestDto;
 import com.capstone.landlordInsurance.entity.*;
 import com.capstone.landlordInsurance.repository.*;
@@ -37,7 +38,7 @@ public class QuoteService {
     private CalculatePremiumService premiumService;
 
     @Transactional
-    public Quote createQuote(QuoteRequestDto quoteRequestDTO) {
+    public PremiumResponseDto createQuote(QuoteRequestDto quoteRequestDTO) {
         // Create Quote Entity and set values from DTO
         Broker broker = brokerRepository.findById(quoteRequestDTO.getBrokerId())
                 .orElseThrow(() -> new RuntimeException("Broker not found with id: " + quoteRequestDTO.getBrokerId()));
@@ -84,10 +85,16 @@ public class QuoteService {
             quote.setLossOfIncomeCoverage(lossOfIncomeCov);
         }
 
-        quote.setCalculatedPremium(premiumService.getPremium(quoteRequestDTO));
+        PremiumResponseDto responseDto = premiumService.getPremium(quoteRequestDTO);
+        responseDto.setClientName(client.getName());
+        responseDto.setClientEmail(client.getEmail());
+        quote.setCalculatedPremium(responseDto.getCalculatedPremium());
 
         // Save Quote and associated coverage entities
-        return quoteRepository.save(quote);
+        Quote savedQuote = quoteRepository.save(quote);
+        responseDto.setQuoteId(savedQuote.getQuoteId());
+        responseDto.setTime(savedQuote.getCreatedAt());
+        return responseDto;
     }
 
     public List<Quote> getAllQuotes() {
@@ -99,7 +106,7 @@ public class QuoteService {
     }
 
     @Transactional
-    public Quote updateQuoteById(Long id, QuoteRequestDto updatedQuote) {
+    public PremiumResponseDto updateQuoteById(Long id, QuoteRequestDto updatedQuote) {
 
         Optional<Quote> optionalQuote = quoteRepository.findById(id);
         if (optionalQuote.isEmpty()) return null;
@@ -172,12 +179,34 @@ public class QuoteService {
             QuoteUtils.updateLossOfIncomeCoverage(lossOfIncomeCov, updatedQuote);
         }
 
-        return quoteRepository.save(existingQuote);
+        PremiumResponseDto responseDto = premiumService.getPremium(updatedQuote);
+        existingQuote.setCalculatedPremium(responseDto.getCalculatedPremium());
+        responseDto.setClientName(client.getName());
+        responseDto.setClientEmail(client.getEmail());
+
+        // Save Quote and associated coverage entities
+        Quote savedQuote = quoteRepository.save(existingQuote);
+        responseDto.setQuoteId(savedQuote.getQuoteId());
+        responseDto.setTime(savedQuote.getCreatedAt());
+        return responseDto;
     }
 
+    @Transactional
     public boolean deleteQuote(Long id) {
-        if (quoteRepository.existsById(id)) {
-            quoteRepository.deleteById(id);
+        Optional<Quote> optionalQuote = quoteRepository.findById(id);
+        if (optionalQuote.isPresent()) {
+            Quote quote = optionalQuote.get();
+
+            if (quote.getFireWaterCoverage() != null) {
+                quote.getFireWaterCoverage().setQuote(null);
+            }
+            if (quote.getVandalismTheftCoverage() != null) {
+                quote.getVandalismTheftCoverage().setQuote(null);
+            }
+            if (quote.getLossOfIncomeCoverage() != null) {
+                quote.getLossOfIncomeCoverage().setQuote(null);
+            }
+            quoteRepository.delete(quote);
             return true;
         }
         return false;
