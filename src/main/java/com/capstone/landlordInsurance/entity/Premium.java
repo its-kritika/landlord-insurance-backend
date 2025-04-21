@@ -29,4 +29,7 @@ public class Premium {
     private double discount;
     private double tax;
     private LocalDateTime time;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

@@ -21,8 +21,8 @@ public class LossOfIncomeCov {
     private int numberOfTenants;
     private boolean hasMortgage;
 
-//    private int vacantDaysPastYear;
-//    private int unitsRented;
+    private int vacantDaysPastYear;
+    private int unitsRented;
 
     // This field can be computed in backend or kept nullable if calculated later
     private Double vacancyRate;

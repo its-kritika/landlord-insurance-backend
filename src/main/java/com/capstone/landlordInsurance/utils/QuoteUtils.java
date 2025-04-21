@@ -54,6 +54,8 @@ public class QuoteUtils {
         if (updatedQuote.getMonthlyRentalIncome() != null) lossOfIncomeCov.setMonthlyRentalIncome(updatedQuote.getMonthlyRentalIncome());
         if (updatedQuote.getNumberOfTenants() != null) lossOfIncomeCov.setNumberOfTenants(updatedQuote.getNumberOfTenants());
         if (updatedQuote.getHasMortgage() != null) lossOfIncomeCov.setHasMortgage(updatedQuote.getHasMortgage());
+        if (updatedQuote.getVacantDaysLastYear() != null) lossOfIncomeCov.setVacantDaysPastYear(updatedQuote.getVacantDaysLastYear());
+        if (updatedQuote.getUnitsRentedLastYear() != null) lossOfIncomeCov.setUnitsRented(updatedQuote.getUnitsRentedLastYear());
 
         if (updatedQuote.getVacantDaysLastYear() != null && updatedQuote.getUnitsRentedLastYear() != null) {
             double vacancyRate = calculateVacancyRate(

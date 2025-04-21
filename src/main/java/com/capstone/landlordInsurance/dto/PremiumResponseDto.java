@@ -23,6 +23,7 @@ public class PremiumResponseDto {
     private double discount;
     private double tax;
     private LocalDateTime time;
+    private LocalDateTime updatedAt;
 }
 
 //{

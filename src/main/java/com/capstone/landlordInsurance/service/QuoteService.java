@@ -9,6 +9,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -97,6 +98,7 @@ public class QuoteService {
         Quote savedQuote = quoteRepository.save(quote);
         responseDto.setQuoteId(savedQuote.getQuoteId());
         responseDto.setTime(savedQuote.getCreatedAt());
+        responseDto.setUpdatedAt(savedQuote.getCreatedAt());
 
         Premium premium = mapToPremiumEntity(responseDto);
         premiumRepository.save(premium);
@@ -118,6 +120,7 @@ public class QuoteService {
         premium.setDiscount(responseDto.getDiscount());
         premium.setTax(responseDto.getTax());
         premium.setTime(responseDto.getTime());
+        premium.setUpdatedAt(responseDto.getUpdatedAt());
         return premium;
     }
 
@@ -135,6 +138,7 @@ public class QuoteService {
         dto.setDiscount(premium.getDiscount());
         dto.setTax(premium.getTax());
         dto.setTime(premium.getTime());
+        dto.setUpdatedAt(premium.getUpdatedAt());
         return dto;
     }
 
@@ -229,6 +233,22 @@ public class QuoteService {
         Quote savedQuote = quoteRepository.save(existingQuote);
         responseDto.setQuoteId(savedQuote.getQuoteId());
         responseDto.setTime(savedQuote.getCreatedAt());
+        responseDto.setUpdatedAt(LocalDateTime.now());
+
+        Premium premium = premiumRepository.findByQuoteId(responseDto.getQuoteId()).get();
+        premium.setClientName(responseDto.getClientName());
+        premium.setClientEmail(responseDto.getClientEmail());
+        premium.setCoverageType(responseDto.getCoverageType());
+        premium.setBasePremium(responseDto.getBasePremium());
+        premium.setCoverageLimit(responseDto.getCoverageLimit());
+        premium.setDeductible(responseDto.getDeductible());
+        premium.setPropertyValue(responseDto.getPropertyValue());
+        premium.setCalculatedPremium(responseDto.getCalculatedPremium());
+        premium.setDiscount(responseDto.getDiscount());
+        premium.setTax(responseDto.getTax());
+        premium.setUpdatedAt(responseDto.getUpdatedAt());
+        premiumRepository.save(premium);
+
         return responseDto;
     }
 
@@ -237,6 +257,7 @@ public class QuoteService {
         Optional<Quote> optionalQuote = quoteRepository.findById(id);
         if (optionalQuote.isPresent()) {
             Quote quote = optionalQuote.get();
+            Premium premium = premiumRepository.findByQuoteId(id).get();
 
             if (quote.getFireWaterCoverage() != null) {
                 quote.getFireWaterCoverage().setQuote(null);
@@ -247,6 +268,8 @@ public class QuoteService {
             if (quote.getLossOfIncomeCoverage() != null) {
                 quote.getLossOfIncomeCoverage().setQuote(null);
             }
+
+            premiumRepository.delete(premium);
             quoteRepository.delete(quote);
             return true;
         }

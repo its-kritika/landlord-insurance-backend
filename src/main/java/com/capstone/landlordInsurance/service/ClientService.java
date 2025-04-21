@@ -6,6 +6,7 @@ import com.capstone.landlordInsurance.entity.Client;
 import com.capstone.landlordInsurance.entity.Quote;
 import com.capstone.landlordInsurance.repository.BrokerRepository;
 import com.capstone.landlordInsurance.repository.ClientRepository;
+import com.capstone.landlordInsurance.repository.PremiumRepository;
 import com.capstone.landlordInsurance.repository.QuoteRepository;
 import com.capstone.landlordInsurance.utils.ClientUtils;
 import jakarta.transaction.Transactional;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ClientService {
@@ -27,6 +29,9 @@ public class ClientService {
 
     @Autowired
     private QuoteRepository quoteRepository;
+
+    @Autowired
+    private PremiumRepository premiumRepository;
 
     @Transactional
     public Client saveClient(ClientDto clientDto){
@@ -101,6 +106,12 @@ public class ClientService {
 
         // Step 1: Fetch and delete all quotes associated with this client
         List<Quote> quotes = quoteRepository.findByClient_ClientId(client.getClientId());
+
+        List<Long> quoteIds = quotes.stream()
+                .map(Quote::getQuoteId)
+                .collect(Collectors.toList());
+        premiumRepository.deleteAllByQuoteIds(quoteIds);
+
         for (Quote quote : quotes) {
             // Break circular references to avoid constraint issues
             if (quote.getFireWaterCoverage() != null) {

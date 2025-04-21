@@ -34,8 +34,8 @@ public class QuoteController {
         return quoteService.getAllQuotes();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<PremiumResponseDto> getQuoteById(@PathVariable Long id) {
+    @GetMapping("/premium/{id}")
+    public ResponseEntity<PremiumResponseDto> getPremiumByQuoteId(@PathVariable Long id) {
         Optional<Premium> premium = premiumRepository.findByQuoteId(id);
 //        Quote quote = quoteService.getQuoteById(id);
         if (premium.isPresent()) {
@@ -43,6 +43,15 @@ public class QuoteController {
             return new ResponseEntity<>(responseDto, HttpStatus.OK);
         }
 
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Quote> getQuoteById(@PathVariable Long id) {
+        Quote quote = quoteService.getQuoteById(id);
+        if (quote != null) {
+            return new ResponseEntity<>(quote, HttpStatus.OK);
+        }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
