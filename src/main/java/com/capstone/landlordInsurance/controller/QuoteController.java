@@ -72,4 +72,11 @@ public class QuoteController {
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
+
+    @PutMapping("/{id}/bind")
+    public ResponseEntity<String> bindQuote(@PathVariable Long id) {
+        quoteService.updateQuoteStatus(id, "bound");
+        return ResponseEntity.ok("Quote status updated to bound");
+    }
+
 }

@@ -32,4 +32,6 @@ public class Premium {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    private String status;
 }

@@ -2,6 +2,7 @@ package com.capstone.landlordInsurance.controller;
 
 import com.capstone.landlordInsurance.dto.ClientDto;
 import com.capstone.landlordInsurance.entity.Client;
+import com.capstone.landlordInsurance.entity.Quote;
 import com.capstone.landlordInsurance.service.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,15 @@ public class ClientController {
         } catch (Exception e){
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Client> getClientById(@PathVariable Long id) {
+        Client client = clientService.getClientById(id);
+        if (client != null) {
+            return new ResponseEntity<>(client, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @GetMapping("/get-clients")

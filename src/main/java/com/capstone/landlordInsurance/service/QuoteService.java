@@ -99,6 +99,7 @@ public class QuoteService {
         responseDto.setQuoteId(savedQuote.getQuoteId());
         responseDto.setTime(savedQuote.getCreatedAt());
         responseDto.setUpdatedAt(savedQuote.getCreatedAt());
+        responseDto.setStatus(savedQuote.getStatus());
 
         Premium premium = mapToPremiumEntity(responseDto);
         premiumRepository.save(premium);
@@ -121,6 +122,7 @@ public class QuoteService {
         premium.setTax(responseDto.getTax());
         premium.setTime(responseDto.getTime());
         premium.setUpdatedAt(responseDto.getUpdatedAt());
+        premium.setStatus(responseDto.getStatus());
         return premium;
     }
 
@@ -139,6 +141,7 @@ public class QuoteService {
         dto.setTax(premium.getTax());
         dto.setTime(premium.getTime());
         dto.setUpdatedAt(premium.getUpdatedAt());
+        dto.setStatus(premium.getStatus());
         return dto;
     }
 
@@ -247,6 +250,7 @@ public class QuoteService {
         premium.setDiscount(responseDto.getDiscount());
         premium.setTax(responseDto.getTax());
         premium.setUpdatedAt(responseDto.getUpdatedAt());
+        premium.setStatus(savedQuote.getStatus());
         premiumRepository.save(premium);
 
         return responseDto;
@@ -275,4 +279,17 @@ public class QuoteService {
         }
         return false;
     }
+
+    @Transactional
+    public void updateQuoteStatus(Long id, String status) {
+        Quote quote = quoteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Quote not found"));
+
+        Premium premium = premiumRepository.findByQuoteId(id).get();
+        quote.setStatus(status);
+        premium.setStatus(status);
+        quoteRepository.save(quote);
+        premiumRepository.save(premium);
+    }
+
 }

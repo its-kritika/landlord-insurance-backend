@@ -24,6 +24,7 @@ public class PremiumResponseDto {
     private double tax;
     private LocalDateTime time;
     private LocalDateTime updatedAt;
+    private String status;
 }
 
 //{

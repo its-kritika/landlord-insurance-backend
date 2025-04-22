@@ -54,6 +54,10 @@ public class ClientService {
         return clientRepository.findByBroker_BrokerIdAndNameContainingIgnoreCase(brokerId, query);
     }
 
+    public Client getClientById(Long id) {
+        return clientRepository.findById(id).orElse(null);
+    }
+
     public List<Client> getClientByBrokerId(Long brokerId){
         return clientRepository.findTop5ByBroker_BrokerIdOrderByCreatedAtDesc(brokerId); //findByBroker_BrokerId
     }
