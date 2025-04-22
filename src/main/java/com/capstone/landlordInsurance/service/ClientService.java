@@ -34,10 +34,12 @@ public class ClientService {
     private PremiumRepository premiumRepository;
 
     @Transactional
-    public Client saveClient(ClientDto clientDto){
-        Broker broker = brokerRepository.findById(clientDto.getBrokerId())
-                .orElseThrow(() -> new IllegalArgumentException("Broker not found"));
+    public Client saveClient(ClientDto clientDto, String brokerEmail){
+        Broker broker = brokerRepository.findByEmail(brokerEmail);
 
+        if (broker == null) {
+            throw new RuntimeException("Broker not found");
+        }
         // Create and populate Client
         Client client = new Client();
         client.setName(clientDto.getName());
@@ -76,28 +78,6 @@ public class ClientService {
                 })
                 .orElseThrow(() -> new NoSuchElementException("Client not found with ID: " + id));
     }
-
-    // delete all quotes related to the client when client is deleted
-//    @Transactional
-//    public boolean deleteClientById(Long id) {
-//        Optional<Client> optionalClient = clientRepository.findById(id);
-//        if (optionalClient.isPresent()) {
-//            Client client = optionalClient.get();
-//
-//            List<Quote> quotes = quoteRepository.findByClient_ClientId(client.getClientId());
-////            for (Quote quote : quotes) {
-////                quote.setFireWaterCoverage(null);
-////                quote.setVandalismTheftCoverage(null);
-////                quote.setLossOfIncomeCoverage(null);
-////                quote.setBroker(null);  // unlink broker to avoid FK violation
-////            }
-//            quoteRepository.deleteAll(quotes);
-//
-//            clientRepository.deleteById(id);
-//            return true;
-//        }
-//        return false;
-//    }
 
     @Transactional
     public boolean deleteClientById(Long id) {

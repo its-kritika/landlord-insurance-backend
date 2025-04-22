@@ -12,6 +12,6 @@ public class ClientDto {
     private String email;
     private String address;
     private String phone;
-    private Long brokerId; // Broker ID from the JSON
+//    private Long brokerId; // Broker ID from the JSON
 
 }

@@ -8,6 +8,8 @@ import com.capstone.landlordInsurance.repository.ClientRepository;
 import com.capstone.landlordInsurance.repository.QuoteRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,8 +27,17 @@ public class BrokerService {
     @Autowired
     private QuoteRepository quoteRepository;
 
-    public void saveBroker(Broker broker){
+    private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @Transactional
+    public Broker saveBroker(Broker broker){
+        broker.setPassword(passwordEncoder.encode(broker.getPassword()));
         brokerRepository.save(broker);
+        return broker;
+    }
+
+    public Broker findByEmail(String email){
+        return brokerRepository.findByEmail(email);
     }
 
     @Transactional
@@ -40,7 +51,7 @@ public class BrokerService {
                         existingBroker.setName(updatedBroker.getName());
                     }
                     if (updatedBroker.getPassword() != null) {
-                        existingBroker.setPassword(updatedBroker.getPassword());
+                        existingBroker.setPassword(passwordEncoder.encode(updatedBroker.getPassword()));
                     }
 
                     return brokerRepository.save(existingBroker);

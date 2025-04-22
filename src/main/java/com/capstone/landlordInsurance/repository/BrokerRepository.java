@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BrokerRepository extends JpaRepository<Broker, Long> {
+    Broker findByEmail(String email);
 }
