@@ -68,6 +68,7 @@ public class ClientController {
 
     @GetMapping("/get-clients")
     public ResponseEntity<?> getClientsByBroker() {
+        Map<String, String> response = new HashMap<>();
         try{
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String brokerEmail = auth.getName();
@@ -82,25 +83,32 @@ public class ClientController {
 
             return new ResponseEntity<>(clients, HttpStatus.OK);
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            response.put("error", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
-            return new ResponseEntity<>("Error in fetching clients", HttpStatus.INTERNAL_SERVER_ERROR);
+            response.put("error", "Error in fetching clients");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateClient(@PathVariable Long id, @RequestBody ClientDto updatedClient) {
+        Map<String, String> response = new HashMap<>();
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
             Client client = clientService.updateClientById(id, updatedClient);
-            return new ResponseEntity<>("Client updated successfully!", HttpStatus.OK);
+            response.put("message", "Client updated successfully!");
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            response.put("error", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         } catch (NoSuchElementException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+            response.put("error", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         } catch(Exception e){
-            return new ResponseEntity<>("Error in updating client", HttpStatus.INTERNAL_SERVER_ERROR);
+            response.put("error", "Error in updating client");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -110,11 +118,11 @@ public class ClientController {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             boolean deleted = clientService.deleteClientById(id);
             if (deleted) {
-                return new ResponseEntity<>("Client deleted successfully!", HttpStatus.OK);
+                return new ResponseEntity<>(HttpStatus.OK);
             }
-            return new ResponseEntity<>("Client not found", HttpStatus.NOT_FOUND);
+            throw new RuntimeException("Client not found");
         } catch (Exception e) {
-            return new ResponseEntity<>("Error in deleting client", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
     }

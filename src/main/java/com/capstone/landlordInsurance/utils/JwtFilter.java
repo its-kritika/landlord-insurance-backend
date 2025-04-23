@@ -18,6 +18,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -32,6 +34,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String authorizationHeader = request.getHeader("Authorization");
         String username = null;
         String jwt = null;
+        Map<String, String> responseJwt = new HashMap<>();
 //        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
 //            jwt = authorizationHeader.substring(7);
 //            username = jwtUtil.extractUsername(jwt);
@@ -65,8 +68,15 @@ public class JwtFilter extends OncePerRequestFilter {
             chain.doFilter(request, response);
 
         } catch (io.jsonwebtoken.ExpiredJwtException ex) {
-            request.setAttribute("exception", ex); // optional: can use in EntryPoint
-            response.getWriter().write("Token expired");
+//            request.setAttribute("exception", ex); // optional: can use in EntryPoint
+//            response.getWriter().write("Token expired");
+//            response.getWriter().flush();
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+
+            String json = String.format("{\"error\": \"%s\"}", "Token expired");
+            response.getWriter().write(json);
             response.getWriter().flush();
 
 //        } catch (io.jsonwebtoken.MalformedJwtException | io.jsonwebtoken.SignatureException ex) {
@@ -75,8 +85,15 @@ public class JwtFilter extends OncePerRequestFilter {
 //            response.getWriter().flush();
 
         } catch (Exception ex) {
+//            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//            response.getWriter().write("Unauthorized Access. Please Login!");
+//            response.getWriter().flush();
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Unauthorized Access. Please Login!");
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+
+            String json = String.format("{\"error\": \"%s\"}", "Unauthorized Access. Please Login!");
+            response.getWriter().write(json);
             response.getWriter().flush();
         }
     }

@@ -42,13 +42,14 @@ public class QuoteService {
     private PremiumRepository premiumRepository;
 
     @Transactional
-    public PremiumResponseDto createQuote(QuoteRequestDto quoteRequestDTO) {
+    public PremiumResponseDto createQuote(QuoteRequestDto quoteRequestDTO, String brokerEmail) {
         // Create Quote Entity and set values from DTO
-        Broker broker = brokerRepository.findById(quoteRequestDTO.getBrokerId())
-                .orElseThrow(() -> new RuntimeException("Broker not found with id: " + quoteRequestDTO.getBrokerId()));
-
+        Broker broker = brokerRepository.findByEmail(brokerEmail);
+        if(broker == null){
+            throw new RuntimeException("Broker not found");
+        }
         Client client = clientRepository.findById(quoteRequestDTO.getClientId())
-                .orElseThrow(() -> new RuntimeException("Client not found with id: " + quoteRequestDTO.getClientId()));
+                .orElseThrow(() -> new RuntimeException("Client not found"));
 
         Quote quote = new Quote();
 
@@ -145,8 +146,8 @@ public class QuoteService {
         return dto;
     }
 
-    public List<Quote> getAllQuotes() {
-        return quoteRepository.findAll();
+    public List<Quote> getQuotesByBrokerId(Long brokerId){
+        return quoteRepository.findByBroker_BrokerId(brokerId);
     }
 
     public Quote getQuoteById(Long id) {

@@ -2,17 +2,20 @@ package com.capstone.landlordInsurance.controller;
 
 import com.capstone.landlordInsurance.dto.PremiumResponseDto;
 import com.capstone.landlordInsurance.dto.QuoteRequestDto;
+import com.capstone.landlordInsurance.entity.Broker;
 import com.capstone.landlordInsurance.entity.Premium;
 import com.capstone.landlordInsurance.entity.Quote;
 import com.capstone.landlordInsurance.repository.PremiumRepository;
+import com.capstone.landlordInsurance.service.BrokerService;
 import com.capstone.landlordInsurance.service.QuoteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/quote")
@@ -24,59 +27,128 @@ public class QuoteController {
     @Autowired
     private PremiumRepository premiumRepository;
 
+    @Autowired
+    private BrokerService brokerService;
+
     @PostMapping
-    public PremiumResponseDto createQuote(@RequestBody QuoteRequestDto quoteRequestDTO) {
-        return quoteService.createQuote(quoteRequestDTO);
+    public ResponseEntity<?>  createQuote(@RequestBody QuoteRequestDto quoteRequestDTO) {
+        try{
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String brokerEmail = auth.getName();
+            PremiumResponseDto response = quoteService.createQuote(quoteRequestDTO, brokerEmail);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch(Exception e){
+            Map<String, String> response = new HashMap<>();
+            String msg = e.getMessage() != null ? e.getMessage() : "Something went wrong";
+            response.put("error", msg);
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
     }
 
     @GetMapping
-    public List<Quote> getAllQuotes() {
-        return quoteService.getAllQuotes();
+    public ResponseEntity<?> getAllQuotes() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+            String brokerEmail = auth.getName();
+            Broker broker = brokerService.findByEmail(brokerEmail);
+            if (broker == null) {
+                throw new RuntimeException("Broker not found");
+            }
+
+            Long brokerId = broker.getBrokerId();
+            List<Quote> quotes = quoteService.getQuotesByBrokerId(brokerId);
+            return new ResponseEntity<>(quotes, HttpStatus.OK);
+        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            String msg = e.getMessage() != null ? e.getMessage() : "Error in fetching quotes";
+            response.put("error", msg);
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping("/premium/{id}")
-    public ResponseEntity<PremiumResponseDto> getPremiumByQuoteId(@PathVariable Long id) {
-        Optional<Premium> premium = premiumRepository.findByQuoteId(id);
-//        Quote quote = quoteService.getQuoteById(id);
-        if (premium.isPresent()) {
-            PremiumResponseDto responseDto = quoteService.mapToPremiumDto(premium.get());
-            return new ResponseEntity<>(responseDto, HttpStatus.OK);
-        }
+    public ResponseEntity<?> getPremiumByQuoteId(@PathVariable Long id) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String brokerEmail = auth.getName();
+            Quote quote = quoteService.getQuoteById(id);
+            if (!quote.getBroker().getEmail().equals(brokerEmail)) {
+                throw new RuntimeException("Access denied for this quote!");
+            }
+            Optional<Premium> premium = premiumRepository.findByQuoteId(id);
 
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            if (premium.isPresent()) {
+                PremiumResponseDto responseDto = quoteService.mapToPremiumDto(premium.get());
+                return new ResponseEntity<>(responseDto, HttpStatus.OK);
+            }
+            throw new RuntimeException();
+        } catch(Exception e){
+            Map<String, String> response = new HashMap<>();
+            String msg = e.getMessage() != null ? e.getMessage() : "Error in fetching premium";
+            response.put("error", msg);
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Quote> getQuoteById(@PathVariable Long id) {
-        Quote quote = quoteService.getQuoteById(id);
-        if (quote != null) {
-            return new ResponseEntity<>(quote, HttpStatus.OK);
+    public ResponseEntity<?> getQuoteById(@PathVariable Long id) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+            Quote quote = quoteService.getQuoteById(id);
+            if (quote == null) {
+                throw new RuntimeException("Quote does not exist!");
+            } return new ResponseEntity<>(quote, HttpStatus.OK);
+        } catch(Exception e) {
+            Map<String, String> response = new HashMap<>();
+            String msg = e.getMessage() != null ? e.getMessage() : "Error occurred!";
+            response.put("error", msg);
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PremiumResponseDto> updateQuote(@PathVariable Long id, @RequestBody QuoteRequestDto updatedQuote) {
-        PremiumResponseDto quote = quoteService.updateQuoteById(id, updatedQuote);
-        if (quote != null){
-            return new ResponseEntity<>(quote, HttpStatus.OK);
+    public ResponseEntity<?> updateQuote(@PathVariable Long id, @RequestBody QuoteRequestDto updatedQuote) {
+        try{
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            PremiumResponseDto quote = quoteService.updateQuoteById(id, updatedQuote);
+            if (quote == null) {
+                throw new RuntimeException("Quote does not exist!");
+            } return new ResponseEntity<>(quote, HttpStatus.OK);
+        } catch(Exception e){
+            Map<String, String> response = new HashMap<>();
+            String msg = e.getMessage() != null ? e.getMessage() : "Error occurred!";
+            response.put("error", msg);
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteQuote(@PathVariable Long id) {
-        boolean deleted = quoteService.deleteQuote(id);
-        if (deleted){
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity<?> deleteQuote(@PathVariable Long id) {
+        try{
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            boolean deleted = quoteService.deleteQuote(id);
+            if (!deleted) {
+                throw new RuntimeException("Quote not found");
+            }
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch(Exception e){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @PutMapping("/{id}/bind")
     public ResponseEntity<String> bindQuote(@PathVariable Long id) {
-        quoteService.updateQuoteStatus(id, "bound");
-        return ResponseEntity.ok("Quote status updated to bound");
+        try{
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            quoteService.updateQuoteStatus(id, "bound");
+            return new ResponseEntity<>("Quote status updated to bound", HttpStatus.OK);
+        } catch(Exception e){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
     }
 
 }
