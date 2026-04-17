@@ -7,6 +7,8 @@ import com.capstone.landlordInsurance.repository.*;
 import com.capstone.landlordInsurance.utils.QuoteUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -293,4 +295,15 @@ public class QuoteService {
         premiumRepository.save(premium);
     }
 
+    public Page<Quote> getPaginatedQuotesByBrokerId(Long brokerId, Pageable pageable) {
+        return quoteRepository.findByBroker_BrokerIdAndStatusNot(brokerId, "deleted", pageable);
+    }
+
+    public long countAllQuotesByBrokerId(Long brokerId) {
+        return quoteRepository.countByBroker_BrokerIdAndStatusNot(brokerId, "deleted");
+    }
+
+    public long countBoundQuotesByBrokerId(Long brokerId){
+        return quoteRepository.countByBroker_BrokerIdAndStatus(brokerId, "bound");
+    }
 }

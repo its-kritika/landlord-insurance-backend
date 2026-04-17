@@ -11,6 +11,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
@@ -79,14 +81,29 @@ public class BrokerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateBroker(@PathVariable Long id, @RequestBody Broker updatedBroker) {
+    public ResponseEntity<?> updateBroker(@RequestBody Broker updatedBroker) {
+        Map<String, String> response = new HashMap<>();
         try {
-            Broker broker = brokerService.updateBroker(id, updatedBroker);
-            return new ResponseEntity<>(broker, HttpStatus.OK);
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String brokerEmail = auth.getName();
+            Broker findBroker = brokerService.findByEmail(brokerEmail);
+            if (findBroker == null){
+                throw new RuntimeException("Broker not found");
+            }
+
+            Long id = findBroker.getBrokerId();
+            brokerService.updateBroker(id, updatedBroker);
+            response.put("message", "Profile updated successfully!");
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            response.put("error", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         } catch (NoSuchElementException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+            response.put("error", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            response.put("error", "Error in updating profile");
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         }
     }
 

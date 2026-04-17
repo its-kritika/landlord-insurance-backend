@@ -9,6 +9,10 @@ import com.capstone.landlordInsurance.repository.PremiumRepository;
 import com.capstone.landlordInsurance.service.BrokerService;
 import com.capstone.landlordInsurance.service.QuoteService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -149,6 +153,69 @@ public class QuoteController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
+    }
+
+    @PutMapping("/soft-delete/{id}")
+    public ResponseEntity<String> softDelete(@PathVariable Long id) {
+        try{
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            quoteService.updateQuoteStatus(id, "deleted");
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch(Exception e){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+    }
+
+    @PutMapping("/restore/{id}")
+    public ResponseEntity<String> restoreQuote(@PathVariable Long id) {
+        try{
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            quoteService.updateQuoteStatus(id, "pending");
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch(Exception e){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+    }
+
+    @GetMapping("/paginated")
+    public ResponseEntity<?> getPaginatedQuotes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+
+        try{
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String brokerEmail = auth.getName();
+
+            Broker broker = brokerService.findByEmail(brokerEmail);
+            if(broker == null){
+                throw new RuntimeException("Broker not found");
+            }
+
+            Long brokerId = broker.getBrokerId();
+            Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+            Page<Quote> paginatedQuotes = quoteService.getPaginatedQuotesByBrokerId(brokerId, pageable);
+            long totalQuotes = quoteService.countAllQuotesByBrokerId(brokerId);
+
+            // Count bound quotes
+            long totalBoundQuotes = quoteService.countBoundQuotesByBrokerId(brokerId);
+
+            // Build Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("content", paginatedQuotes.getContent());
+            response.put("totalPages", paginatedQuotes.getTotalPages());
+            response.put("totalQuotes", totalQuotes);
+            response.put("totalBoundQuotes", totalBoundQuotes);
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+//            return new ResponseEntity<>(paginatedQuotes, HttpStatus.OK);
+        } catch(Exception e){
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", e.getMessage() != null ? e.getMessage() : "Error in fetching Quotes");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 }
