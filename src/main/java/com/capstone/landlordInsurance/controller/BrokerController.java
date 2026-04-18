@@ -80,7 +80,7 @@ public class BrokerController {
         }
     }
 
-    @PutMapping("/{id}")
+    @PutMapping
     public ResponseEntity<?> updateBroker(@RequestBody Broker updatedBroker) {
         Map<String, String> response = new HashMap<>();
         try {
