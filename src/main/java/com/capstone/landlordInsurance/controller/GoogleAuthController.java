@@ -4,6 +4,7 @@ import com.capstone.landlordInsurance.entity.Broker;
 import com.capstone.landlordInsurance.repository.BrokerRepository;
 import com.capstone.landlordInsurance.service.BrokerDetailsServiceImpl;
 import com.capstone.landlordInsurance.utils.JwtUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +19,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @RestController
@@ -46,6 +51,25 @@ public class GoogleAuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    //handling frontend request when user clicks google login button.
+    //It only starts the Google login flow by redirecting the browser to Google.
+    //Telling Google, after login, send me an authorization code
+    @GetMapping
+    public void handleGoogleLogin(HttpServletResponse response) throws IOException {
+
+        String googleAuthUrl =
+                "https://accounts.google.com/o/oauth2/v2/auth"
+                        + "?client_id=" + clientId
+                        + "&redirect_uri=" + URLEncoder.encode("http://localhost:8080/auth/google/callback", StandardCharsets.UTF_8)
+                        + "&response_type=code"
+                        + "&scope=" + URLEncoder.encode("email profile", StandardCharsets.UTF_8);
+
+        response.sendRedirect(googleAuthUrl);
+    };
+
+    //output returned by google (authorization code taken from google and a token is generated)
+    //authorization code approach is more secure that directly taking token from google
+    //Google sends the authorization code to this method
     @GetMapping("/callback")
     public ResponseEntity<?> handleGoogleCallback(@RequestParam String code){ // code = Authorization code from google
         try{
@@ -57,7 +81,7 @@ public class GoogleAuthController {
             params.add("client_id", clientId);
             params.add("client_secret", clientSecret);
             params.add("redirect_uri", "http://localhost:8080/auth/google/callback");
-            //params.add("redirect_uri", "https://developers.google.com/oauthplayground");  //http://localhost:8080/auth/google/callback
+//            params.add("redirect_uri", "https://developers.google.com/oauthplayground");  //http://localhost:8080/auth/google/callback
             params.add("grant_type", "authorization_code");
 
             HttpHeaders headers = new HttpHeaders();
@@ -71,23 +95,35 @@ public class GoogleAuthController {
             ResponseEntity<Map> brokerInfoResponse = restTemplate.getForEntity(brokerInfoUrl, Map.class);
 
             if (brokerInfoResponse.getStatusCode() == HttpStatus.OK) {
-                Map<String, Object> brokerInfo = brokerInfoResponse.getBody();
-                String email = (String) brokerInfo.get("email");
+                Map<String, Object> brokerGoogleInfo = brokerInfoResponse.getBody();
+                String email = (String) brokerGoogleInfo.get("email");
+                String googleName = (String) brokerGoogleInfo.get("name");
                 UserDetails brokerDetails = null;
+
+                Broker savedBroker;
 
                 try{
                     brokerDetails = brokerDetailsService.loadUserByUsername(email);
+                    savedBroker = brokerRepository.findByEmail(email);
+
                 }catch (Exception e){
                     Broker broker = new Broker();
                     broker.setEmail(email);
-                    broker.setName(email);
+                    broker.setName(googleName);
 
-                    //generating random password
+                    //generating random password for google login
                     broker.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-                    brokerRepository.save(broker);
+                    savedBroker = brokerRepository.save(broker);
                 }
                 String jwtToken = jwtUtils.generateToken(email);
-                return ResponseEntity.ok(Collections.singletonMap("token", jwtToken));
+
+                //Redirecting back to frontend with token and name in url
+                String redirectUrl = "http://localhost:4200/auth/callback?token=" + jwtToken
+                        + "&name=" + URLEncoder.encode(savedBroker.getName(), StandardCharsets.UTF_8);
+
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create(redirectUrl))
+                        .build();
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
