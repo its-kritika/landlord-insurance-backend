@@ -125,10 +125,19 @@ public class GoogleAuthController {
                         .location(URI.create(redirectUrl))
                         .build();
             }
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            throw new Exception();
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
             log.error("Exception occurred while handleGoogleCallback ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+
+            //Redirecting error back to frontend
+            String redirectUrl = "http://localhost:4200/auth/callback?error="
+                    + URLEncoder.encode("login failed", StandardCharsets.UTF_8);
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(redirectUrl))
+                    .build();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }
