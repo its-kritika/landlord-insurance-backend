@@ -45,6 +45,8 @@ public class JwtUtils {
         return createToken(claims, username);
     }
 
+    //My JWT auth is stateless, that means backend does not maintain login session.
+    //I am not storing token in backend simply creating and passing to frontend which then stores in localstorage
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .claims(claims)
