@@ -45,6 +45,7 @@ public class BrokerController {
             String jwt = jwtUtils.generateToken(broker.getEmail());
             response.put("token", jwt);
             response.put("name", savedBroker.getName());
+            response.put("email", broker.getEmail());
             return new ResponseEntity<>(response, HttpStatus.CREATED);
 
         } catch (DataIntegrityViolationException e) {
@@ -72,6 +73,7 @@ public class BrokerController {
 
             response.put("token", jwt);
             response.put("name", savedBroker.getName());
+            response.put("email", broker.getEmail());
             return new ResponseEntity<>(response, HttpStatus.OK);
 
         } catch (Exception e){
@@ -104,6 +106,34 @@ public class BrokerController {
         } catch (Exception e) {
             response.put("error", "Error in updating profile");
             return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PostMapping("update-password")
+    public ResponseEntity<?> updatePassword(@RequestBody Map<String, String> request){
+        Map<String, String> response = new HashMap<>();
+
+        try {
+            String token = request.get("token");
+            String newPassword = request.get("newPassword");
+            String brokerEmail = jwtUtils.extractUsername(token);
+
+            if (brokerEmail == null || brokerEmail.isBlank()) {
+                throw new RuntimeException("Invalid request!");
+            }
+
+            brokerService.updateBrokerPassword(brokerEmail, newPassword);
+
+            response.put("message", "Password updated successfully!");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (RuntimeException e) {
+            response.put("error", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+
+        } catch (Exception e) {
+            response.put("error", "Failed to update password. Please try again!");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

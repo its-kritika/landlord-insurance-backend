@@ -119,7 +119,8 @@ public class GoogleAuthController {
 
                 //Redirecting back to frontend with token and name in url
                 String redirectUrl = "http://localhost:4200/auth/callback?token=" + jwtToken
-                        + "&name=" + URLEncoder.encode(savedBroker.getName(), StandardCharsets.UTF_8);
+                        + "&name=" + URLEncoder.encode(savedBroker.getName(), StandardCharsets.UTF_8)
+                        + "&email=" + URLEncoder.encode(savedBroker.getEmail(), StandardCharsets.UTF_8);;
 
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create(redirectUrl))

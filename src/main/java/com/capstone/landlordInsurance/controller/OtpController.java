@@ -5,6 +5,7 @@ import com.capstone.landlordInsurance.entity.ResetPwdOtp;
 import com.capstone.landlordInsurance.service.BrokerService;
 import com.capstone.landlordInsurance.service.EmailService;
 import com.capstone.landlordInsurance.service.ResetPwdOtpService;
+import com.capstone.landlordInsurance.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,9 @@ public class OtpController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private JwtUtils jwtUtils;
 
     @Autowired
     private ResetPwdOtpService resetPwdOtpService;
@@ -85,7 +89,10 @@ public class OtpController {
             otpRecord.setOtpUsedOnce(true);
             resetPwdOtpService.markOtpAsUsed(otpRecord);
 
+            String jwtToken = jwtUtils.generateToken(brokerEmail);
+
             response.put("message", "OTP verified successfully!");
+            response.put("resetToken", jwtToken);
             return new ResponseEntity<>(response, HttpStatus.OK);
 
         } catch (RuntimeException e) {

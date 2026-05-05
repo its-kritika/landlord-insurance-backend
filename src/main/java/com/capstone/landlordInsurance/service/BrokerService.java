@@ -58,4 +58,15 @@ public class BrokerService {
                 })
                 .orElseThrow(() -> new NoSuchElementException("Broker not found with ID: " + id));
     }
+
+    @Transactional
+    public void updateBrokerPassword(String brokerEmail, String password) {
+        Broker broker = brokerRepository.findByEmail(brokerEmail);
+
+        if (broker == null) {
+            throw new RuntimeException("Broker not found!");
+        }
+        broker.setPassword(passwordEncoder.encode(password));
+        brokerRepository.save(broker);
+    }
 }

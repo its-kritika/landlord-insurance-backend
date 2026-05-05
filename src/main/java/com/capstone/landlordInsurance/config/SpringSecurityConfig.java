@@ -32,7 +32,7 @@ public class SpringSecurityConfig {
         // JWT AUTH
         return http.authorizeHttpRequests(request -> request
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/broker/signup", "/broker/login", "/broker/sendOtp", "/broker/verifyOtp").permitAll()
+                        .requestMatchers("/broker/signup", "/broker/login", "/broker/sendOtp", "/broker/verifyOtp", "/broker/update-password").permitAll()
                         .requestMatchers("/quote/**", "/client/**", "/broker/**").authenticated()
                         .anyRequest().permitAll())
                 .csrf(AbstractHttpConfigurer::disable)
