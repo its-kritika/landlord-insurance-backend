@@ -13,7 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "clients")
+@Table(name = "clients",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"broker_id", "email"})} //A client should be unique for a broker
+)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -24,7 +26,7 @@ public class Client {
     private Long clientId;
     private String name;
 
-    @Column(unique = true)
+    @Column
     private String email;
     private String address;
 
