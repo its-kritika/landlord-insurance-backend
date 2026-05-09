@@ -8,6 +8,7 @@ import com.capstone.landlordInsurance.entity.Quote;
 import com.capstone.landlordInsurance.repository.PremiumRepository;
 import com.capstone.landlordInsurance.service.BrokerService;
 import com.capstone.landlordInsurance.service.QuoteService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,8 +20,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/quote")
 public class QuoteController {
@@ -182,7 +185,11 @@ public class QuoteController {
     @GetMapping("/paginated")
     public ResponseEntity<?> getPaginatedQuotes(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size) {
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "desc") String sortOrder,
+            @RequestParam(required = false) Integer days,
+            @RequestParam(required = false) String search){
 
         try{
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -193,10 +200,74 @@ public class QuoteController {
                 throw new RuntimeException("Broker not found");
             }
 
-            Long brokerId = broker.getBrokerId();
-            Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+            Sort sort = sortOrder.equalsIgnoreCase("asc")
+                    ? Sort.by("createdAt").ascending()
+                    : Sort.by("createdAt").descending();
 
-            Page<Quote> paginatedQuotes = quoteService.getPaginatedQuotesByBrokerId(brokerId, pageable);
+            LocalDateTime startDate = null;
+
+            //Days from which quote is to be displayed
+            if (days != null) {
+                startDate = LocalDateTime.now().minusDays(days);
+            }
+
+            Long brokerId = broker.getBrokerId();
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            Page<Quote> paginatedQuotes;
+            log.info("startDate: {}", search);
+            if (search != null && !search.isBlank()){
+                paginatedQuotes =
+                        quoteService.searchQuotes(
+                                broker.getBrokerId(),
+                                search,
+                                pageable
+                        );
+            }
+            else {
+                if (status != null && !status.isBlank()) {
+                    if (startDate != null) {
+
+                        paginatedQuotes =
+                                quoteService.getQuotesByBrokerIdStatusAndDate(
+                                        broker.getBrokerId(),
+                                        status,
+                                        startDate,
+                                        pageable
+                                );
+
+                    } else {
+
+                        paginatedQuotes =
+                                quoteService.getQuotesByBrokerIdAndStatus(
+                                        broker.getBrokerId(),
+                                        status,
+                                        pageable
+                                );
+                    }
+
+                } else {
+
+                    if (startDate != null) {
+
+                        paginatedQuotes =
+                                quoteService.getQuotesByBrokerIdAndDate(
+                                        broker.getBrokerId(),
+                                        startDate,
+                                        pageable
+                                );
+
+                    } else {
+
+                        paginatedQuotes =
+                                quoteService.getPaginatedQuotesByBrokerId(
+                                        broker.getBrokerId(),
+                                        pageable
+                                );
+                    }
+                }
+            }
+
             long totalQuotes = quoteService.countAllQuotesByBrokerId(brokerId);
 
             // Count bound quotes
