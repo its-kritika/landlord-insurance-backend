@@ -307,23 +307,40 @@ public class QuoteService {
         return quoteRepository.countByBroker_BrokerIdAndStatus(brokerId, "bound");
     }
 
-    public Page<Quote> getQuotesByBrokerIdAndStatus(Long brokerId, String status, Pageable pageable) {
-        return quoteRepository.findByBroker_BrokerIdAndStatus(brokerId, status, pageable);
-    }
+//    public Page<Quote> getQuotesByBrokerIdAndStatus(Long brokerId, String status, Pageable pageable) {
+//        return quoteRepository.findByBroker_BrokerIdAndStatus(brokerId, status, pageable);
+//    }
+//
+//    public Page<Quote> getQuotesByBrokerIdStatusAndDate(Long brokerId, String status, LocalDateTime startDate, Pageable pageable) {
+//        return quoteRepository.findByBroker_BrokerIdAndStatusAndCreatedAtAfter(brokerId, status, startDate, pageable);
+//    }
+//
+//    public Page<Quote> getQuotesByBrokerIdAndDate(Long brokerId, LocalDateTime startDate, Pageable pageable) {
+//        return quoteRepository.findByBroker_BrokerIdAndCreatedAtAfter(brokerId, startDate, pageable);
+//    }
 
-    public Page<Quote> getQuotesByBrokerIdStatusAndDate(Long brokerId, String status, LocalDateTime startDate, Pageable pageable) {
-        return quoteRepository.findByBroker_BrokerIdAndStatusAndCreatedAtAfter(brokerId, status, startDate, pageable);
-    }
+//    public Page<Quote> searchQuotes(
+//            Long brokerId,
+//            String search,
+//            Pageable pageable
+//    ) {
+//        return quoteRepository.searchQuotes(brokerId, search, pageable);
+//    }
 
-    public Page<Quote> getQuotesByBrokerIdAndDate(Long brokerId, LocalDateTime startDate, Pageable pageable) {
-        return quoteRepository.findByBroker_BrokerIdAndCreatedAtAfter(brokerId, startDate, pageable);
-    }
-
-    public Page<Quote> searchQuotes(
+    public Page<Quote> filterQuotes(
             Long brokerId,
+            String status,
+            LocalDateTime startDate,
             String search,
             Pageable pageable
     ) {
-        return quoteRepository.searchQuotes(brokerId, search, pageable);
+
+        return quoteRepository.filterQuotes(
+                brokerId,
+                status,
+                startDate,
+                search,
+                pageable
+        );
     }
 }

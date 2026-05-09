@@ -183,6 +183,15 @@ public class QuoteController {
     }
 
     @GetMapping("/paginated")
+//    This function will return combinations of these filters, applied on dashboard page in frontend:
+//
+//    search only
+//    status only
+//    days only
+//    search + status
+//    search + days
+//    status + days
+//    search + status + days
     public ResponseEntity<?> getPaginatedQuotes(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
@@ -211,62 +220,44 @@ public class QuoteController {
                 startDate = LocalDateTime.now().minusDays(days);
             }
 
-            Long brokerId = broker.getBrokerId();
             Pageable pageable = PageRequest.of(page, size, sort);
 
-            Page<Quote> paginatedQuotes;
-            log.info("startDate: {}", search);
-            if (search != null && !search.isBlank()){
-                paginatedQuotes =
-                        quoteService.searchQuotes(
-                                broker.getBrokerId(),
-                                search,
-                                pageable
-                        );
+            //It will fetch directly from our query
+            Page<Quote> paginatedQuotes =
+                    quoteService.filterQuotes(
+                            broker.getBrokerId(),
+                            status,
+                            startDate,
+                            search,
+                            pageable
+                    );
+
+            // Build Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("content", paginatedQuotes.getContent());
+            response.put("totalPages", paginatedQuotes.getTotalPages());
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+//            return new ResponseEntity<>(paginatedQuotes, HttpStatus.OK);
+        } catch(Exception e){
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", e.getMessage() != null ? e.getMessage() : "Error in fetching Quotes");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<?> getQuoteStats() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String brokerEmail = auth.getName();
+
+            Broker broker = brokerService.findByEmail(brokerEmail);
+            if (broker == null) {
+                throw new RuntimeException("Broker not found");
             }
-            else {
-                if (status != null && !status.isBlank()) {
-                    if (startDate != null) {
 
-                        paginatedQuotes =
-                                quoteService.getQuotesByBrokerIdStatusAndDate(
-                                        broker.getBrokerId(),
-                                        status,
-                                        startDate,
-                                        pageable
-                                );
-
-                    } else {
-
-                        paginatedQuotes =
-                                quoteService.getQuotesByBrokerIdAndStatus(
-                                        broker.getBrokerId(),
-                                        status,
-                                        pageable
-                                );
-                    }
-
-                } else {
-
-                    if (startDate != null) {
-
-                        paginatedQuotes =
-                                quoteService.getQuotesByBrokerIdAndDate(
-                                        broker.getBrokerId(),
-                                        startDate,
-                                        pageable
-                                );
-
-                    } else {
-
-                        paginatedQuotes =
-                                quoteService.getPaginatedQuotesByBrokerId(
-                                        broker.getBrokerId(),
-                                        pageable
-                                );
-                    }
-                }
-            }
+            Long brokerId = broker.getBrokerId();
 
             long totalQuotes = quoteService.countAllQuotesByBrokerId(brokerId);
 
@@ -275,16 +266,14 @@ public class QuoteController {
 
             // Build Response
             Map<String, Object> response = new HashMap<>();
-            response.put("content", paginatedQuotes.getContent());
-            response.put("totalPages", paginatedQuotes.getTotalPages());
             response.put("totalQuotes", totalQuotes);
             response.put("totalBoundQuotes", totalBoundQuotes);
 
             return new ResponseEntity<>(response, HttpStatus.OK);
-//            return new ResponseEntity<>(paginatedQuotes, HttpStatus.OK);
-        } catch(Exception e){
+        } catch (Exception e) {
+
             Map<String, Object> response = new HashMap<>();
-            response.put("error", e.getMessage() != null ? e.getMessage() : "Error in fetching Quotes");
+            response.put("error", e.getMessage() != null ? e.getMessage() : "Error in fetching quote stats.");
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
