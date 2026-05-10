@@ -3,11 +3,13 @@ package com.capstone.landlordInsurance.controller;
 import com.capstone.landlordInsurance.dto.ClientDto;
 import com.capstone.landlordInsurance.entity.Broker;
 import com.capstone.landlordInsurance.entity.Client;
-import com.capstone.landlordInsurance.entity.Quote;
 import com.capstone.landlordInsurance.service.BrokerService;
 import com.capstone.landlordInsurance.service.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -125,6 +127,51 @@ public class ClientController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
+    }
+
+    @GetMapping("/paginated")
+//    This function will return combinations of these filters, applied on dashboard page in frontend:
+
+    public ResponseEntity<?> getPaginatedClients(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String search){
+
+        try{
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String brokerEmail = auth.getName();
+
+            Broker broker = brokerService.findByEmail(brokerEmail);
+            if(broker == null){
+                throw new RuntimeException("Broker not found");
+            }
+
+            Pageable pageable = PageRequest.of(page, size);
+
+            //It will fetch directly from our query
+            Page<Client> paginatedClients =
+                    clientService.filterClients(
+                            broker.getBrokerId(),
+                            search,
+                            pageable
+                    );
+
+            Long brokerId = broker.getBrokerId();
+            long totalClients = clientService.countAllClientsByBrokerId(brokerId);
+
+            // Build Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("content", paginatedClients.getContent());
+            response.put("totalPages", paginatedClients.getTotalPages());
+            response.put("totalClients", totalClients);
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch(Exception e){
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", e.getMessage() != null ? e.getMessage() : "Error in fetching Clients");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 }

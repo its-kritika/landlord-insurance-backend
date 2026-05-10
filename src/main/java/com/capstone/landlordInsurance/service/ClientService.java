@@ -11,8 +11,11 @@ import com.capstone.landlordInsurance.repository.QuoteRepository;
 import com.capstone.landlordInsurance.utils.ClientUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -117,6 +120,23 @@ public class ClientService {
         clientRepository.delete(client);
 
         return true;
+    }
+
+    public Page<Client> filterClients(
+            Long brokerId,
+            String search,
+            Pageable pageable
+    ) {
+
+        return clientRepository.filterClients(
+                brokerId,
+                search,
+                pageable
+        );
+    }
+
+    public long countAllClientsByBrokerId(Long brokerId) {
+        return clientRepository.countByBroker_BrokerId(brokerId);
     }
 
 }
