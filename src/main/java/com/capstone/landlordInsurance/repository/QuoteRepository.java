@@ -55,6 +55,8 @@ public interface QuoteRepository extends JpaRepository<Quote, Long> {
     SELECT q FROM Quote q
     WHERE q.broker.brokerId = :brokerId
 
+    AND LOWER(q.status) <> 'deleted'
+    
     AND (
         :status IS NULL
         OR :status = ''
