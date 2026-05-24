@@ -1,5 +1,6 @@
 package com.capstone.landlordInsurance.controller;
 
+import com.capstone.landlordInsurance.dto.PaymentReceiptDto;
 import com.capstone.landlordInsurance.dto.PremiumResponseDto;
 import com.capstone.landlordInsurance.dto.QuoteRequestDto;
 import com.capstone.landlordInsurance.entity.Broker;
@@ -8,6 +9,7 @@ import com.capstone.landlordInsurance.entity.Quote;
 import com.capstone.landlordInsurance.repository.PremiumRepository;
 import com.capstone.landlordInsurance.service.BrokerService;
 import com.capstone.landlordInsurance.service.QuoteService;
+import com.capstone.landlordInsurance.service.RazorpayService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -36,6 +38,9 @@ public class QuoteController {
 
     @Autowired
     private BrokerService brokerService;
+
+    @Autowired
+    private RazorpayService razorpayService;
 
     @PostMapping
     public ResponseEntity<?>  createQuote(@RequestBody QuoteRequestDto quoteRequestDTO) {
@@ -146,17 +151,17 @@ public class QuoteController {
         }
     }
 
-    @PutMapping("/{id}/bind")
-    public ResponseEntity<String> bindQuote(@PathVariable Long id) {
-        try{
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            quoteService.updateQuoteStatus(id, "bound");
-            return new ResponseEntity<>("Quote status updated to bound", HttpStatus.OK);
-        } catch(Exception e){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-
-    }
+//    @PutMapping("/{id}/bind")
+//    public ResponseEntity<String> bindQuote(@PathVariable Long id) {
+//        try{
+//            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//            quoteService.updateQuoteStatus(id, "bound");
+//            return new ResponseEntity<>("Quote status updated to bound", HttpStatus.OK);
+//        } catch(Exception e){
+//            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+//        }
+//
+//    }
 
     @PutMapping("/soft-delete/{id}")
     public ResponseEntity<String> softDelete(@PathVariable Long id) {
@@ -275,6 +280,25 @@ public class QuoteController {
             Map<String, Object> response = new HashMap<>();
             response.put("error", e.getMessage() != null ? e.getMessage() : "Error in fetching quote stats.");
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/receipt/{quoteId}")
+    public ResponseEntity<?> getReceipt(@PathVariable Long quoteId) {
+
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String brokerEmail = auth.getName();
+
+            PaymentReceiptDto paymentReceiptDto = razorpayService.getPaymentDetails(quoteId, brokerEmail);
+
+            return new ResponseEntity<>(paymentReceiptDto, HttpStatus.OK);
+        } catch (Exception e){
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", e.getMessage() != null ? e.getMessage() : "Payment Details could not be fetched! Try again later.");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+
         }
     }
 

@@ -19,13 +19,8 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long paymentId;
 
-    @ManyToOne
-    @JoinColumn(name = "quote_id")
-    private Quote quote;
-
     private double amount;
 
-    @Column(columnDefinition = "DEFAULT 'INR'")
     private String currency = "INR";
 
     private String razorpayOrderId;
@@ -36,10 +31,13 @@ public class Payment {
 
     private String receiptId;
 
-    @Column(columnDefinition = "DEFAULT 'pending'")
     private String paymentStatus = "pending";
 
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime paymentDate;
+
+    @ManyToOne
+    @JoinColumn(name = "quote_id")
+    private Quote quote;
 }

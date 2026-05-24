@@ -1,6 +1,8 @@
 package com.capstone.landlordInsurance.controller;
 
+import com.capstone.landlordInsurance.dto.PaymentReceiptDto;
 import com.capstone.landlordInsurance.dto.PaymentRequestDto;
+import com.capstone.landlordInsurance.dto.PaymentVerificationDto;
 import com.capstone.landlordInsurance.service.RazorpayService;
 import com.razorpay.RazorpayException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,13 +31,30 @@ public class PaymentController {
             return ResponseEntity.ok(order);
 
         } catch (Exception e){
-
             Map<String, String> response = new HashMap<>();
-            String msg = e.getMessage() != null ? e.getMessage() : "Payment failed!";
-            response.put("error", msg);
+            response.put("error", e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 
         }
 
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<?> verifyPayment(@RequestBody PaymentVerificationDto paymentVerificationDto) {
+
+        Map<String, String> response = new HashMap<>();
+        try{
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String brokerEmail = auth.getName();
+            razorpayService.verifyPayment(paymentVerificationDto, brokerEmail);
+
+            response.put("message", "Payment has been verified!");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+
+            response.put("error", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
