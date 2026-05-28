@@ -156,20 +156,44 @@ public class ClientController {
                             pageable
                     );
 
-            Long brokerId = broker.getBrokerId();
-            long totalClients = clientService.countAllClientsByBrokerId(brokerId);
-
             // Build Response
             Map<String, Object> response = new HashMap<>();
             response.put("content", paginatedClients.getContent());
             response.put("totalPages", paginatedClients.getTotalPages());
-            response.put("totalClients", totalClients);
 
             return new ResponseEntity<>(response, HttpStatus.OK);
 
         } catch(Exception e){
             Map<String, Object> response = new HashMap<>();
             response.put("error", e.getMessage() != null ? e.getMessage() : "Error in fetching Clients");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<?> getClientStats() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String brokerEmail = auth.getName();
+
+            Broker broker = brokerService.findByEmail(brokerEmail);
+            if (broker == null) {
+                throw new RuntimeException("Broker not found");
+            }
+
+            Long brokerId = broker.getBrokerId();
+
+            long totalClients = clientService.countAllClientsByBrokerId(brokerId);
+
+            // Build Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("totalClients", totalClients);
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", e.getMessage() != null ? e.getMessage() : "Error in fetching client stats.");
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
