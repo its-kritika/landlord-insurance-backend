@@ -68,10 +68,16 @@ public class BrokerController {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(broker.getEmail(), broker.getPassword()));
             UserDetails brokerDetails = brokerDetailsService.loadUserByUsername(broker.getEmail());
-            String jwt = jwtUtils.generateToken(brokerDetails.getUsername());
+
+            // Longer Expiration
+            String refreshJwt = jwtUtils.generateToken(brokerDetails.getUsername());
+
+            // Current access and of shorter duration
+            String accessJwt = jwtUtils.generateToken(brokerDetails.getUsername());
             Broker savedBroker = brokerService.findByEmail(broker.getEmail());
 
-            response.put("token", jwt);
+            response.put("accessToken", accessJwt);
+            response.put("refreshToken", refreshJwt);
             response.put("name", savedBroker.getName());
             response.put("email", broker.getEmail());
             return new ResponseEntity<>(response, HttpStatus.OK);
@@ -79,6 +85,42 @@ public class BrokerController {
         } catch (Exception e){
             response.put("error", "Incorrect email or password!");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping("refresh-token")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request){
+
+        try{
+            String accessToken = request.get("token");
+
+            // validate access token
+            if (!jwtUtils.validateToken(accessToken)) {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid Refresh Token");
+            }
+
+            // extract username/email from token
+            String brokerEmail = jwtUtils.extractUsername(accessToken);
+
+            UserDetails brokerDetails = brokerDetailsService.loadUserByUsername(brokerEmail);
+
+            // generate new access token
+            String newAccessToken = jwtUtils.generateToken(brokerDetails.getUsername());
+
+            // optional: rotate refresh token
+            String newRefreshToken =
+                    jwtService.generateRefreshToken(user);
+
+            return ResponseEntity.ok(
+                    new AuthResponse(
+                            newAccessToken,
+                            newRefreshToken
+                    )
+            );
+        } catch (Exception e){
+            return "";
         }
     }
 
