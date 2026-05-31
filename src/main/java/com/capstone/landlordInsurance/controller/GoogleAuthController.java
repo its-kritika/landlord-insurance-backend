@@ -116,11 +116,13 @@ public class GoogleAuthController {
                     savedBroker = brokerRepository.save(broker);
                 }
                 String jwtToken = jwtUtils.generateToken(email);
+                String refreshJwtToken = jwtUtils.generateRefreshToken(email);
 
                 //Redirecting back to frontend with token and name in url
                 String redirectUrl = "http://localhost:4200/auth/callback?token=" + jwtToken
+                        + "&refreshToken=" + refreshJwtToken
                         + "&name=" + URLEncoder.encode(savedBroker.getName(), StandardCharsets.UTF_8)
-                        + "&email=" + URLEncoder.encode(savedBroker.getEmail(), StandardCharsets.UTF_8);;
+                        + "&email=" + URLEncoder.encode(savedBroker.getEmail(), StandardCharsets.UTF_8);
 
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create(redirectUrl))

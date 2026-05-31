@@ -4,6 +4,7 @@ import com.capstone.landlordInsurance.entity.Broker;
 import com.capstone.landlordInsurance.service.BrokerDetailsServiceImpl;
 import com.capstone.landlordInsurance.service.BrokerService;
 import com.capstone.landlordInsurance.utils.JwtUtils;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -70,7 +71,7 @@ public class BrokerController {
             UserDetails brokerDetails = brokerDetailsService.loadUserByUsername(broker.getEmail());
 
             // Longer Expiration
-            String refreshJwt = jwtUtils.generateToken(brokerDetails.getUsername());
+            String refreshJwt = jwtUtils.generateRefreshToken(brokerDetails.getUsername());
 
             // Current access and of shorter duration
             String accessJwt = jwtUtils.generateToken(brokerDetails.getUsername());
@@ -90,19 +91,18 @@ public class BrokerController {
 
     @PostMapping("refresh-token")
     public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request){
+        Map<String, String> response = new HashMap<>();
 
         try{
-            String accessToken = request.get("token");
+            String refreshToken = request.get("refreshToken");
 
-            // validate access token
-            if (!jwtUtils.validateToken(accessToken)) {
-                return ResponseEntity
-                        .status(HttpStatus.UNAUTHORIZED)
-                        .body("Invalid Refresh Token");
+            // validate refresh token
+            if (!jwtUtils.validateToken(refreshToken)) {
+                throw new RuntimeException("Invalid token!");
             }
 
             // extract username/email from token
-            String brokerEmail = jwtUtils.extractUsername(accessToken);
+            String brokerEmail = jwtUtils.extractUsername(refreshToken);
 
             UserDetails brokerDetails = brokerDetailsService.loadUserByUsername(brokerEmail);
 
@@ -110,17 +110,15 @@ public class BrokerController {
             String newAccessToken = jwtUtils.generateToken(brokerDetails.getUsername());
 
             // optional: rotate refresh token
-            String newRefreshToken =
-                    jwtService.generateRefreshToken(user);
+            String newRefreshToken = jwtUtils.generateRefreshToken(brokerDetails.getUsername());
 
-            return ResponseEntity.ok(
-                    new AuthResponse(
-                            newAccessToken,
-                            newRefreshToken
-                    )
-            );
+            response.put("accessToken", newAccessToken);
+            response.put("refreshToken", newRefreshToken);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
         } catch (Exception e){
-            return "";
+            response.put("error", "Something went wrong!");
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -168,6 +166,10 @@ public class BrokerController {
 
             response.put("message", "Password updated successfully!");
             return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (ExpiredJwtException e) {
+            response.put("error", "Your password reset link has expired. Please request a new one!");
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
 
         } catch (RuntimeException e) {
             response.put("error", e.getMessage());

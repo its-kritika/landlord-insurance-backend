@@ -40,21 +40,28 @@ public class JwtUtils {
         return extractExpiration(token).before(new Date());
     }
 
+    // AccessToken has half an hour expiry
     public String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, username);
+        return createToken(claims, username, 1000 * 60 * 30);
+    }
+
+    // Refresh Token has 24 hours expiration time
+    public String generateRefreshToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, username, 1000 * 60 * 60 * 24);
     }
 
     //My JWT auth is stateless, that means backend does not maintain login session.
     //I am not storing token in backend simply creating and passing to frontend which then stores in localstorage
-    private String createToken(Map<String, Object> claims, String subject) {
+    private String createToken(Map<String, Object> claims, String subject, long expirationTime) {
         return Jwts.builder()
                 .claims(claims)
                 .subject(subject)
                 .header().empty().add("typ", "JWT")
                 .and()
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1 hour expiration time
+                .expiration(new Date(System.currentTimeMillis() + expirationTime)) // 1 hour expiration time
                 .signWith(getSigningKey())
                 .compact();
     }
