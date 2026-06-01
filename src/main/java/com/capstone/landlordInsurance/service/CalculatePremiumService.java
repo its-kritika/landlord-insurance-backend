@@ -21,9 +21,11 @@ public class CalculatePremiumService {
         PremiumResponseDto response = new PremiumResponseDto();
         double modifier = calculateCommonFactor(request);
 
+        double dynamic = 0.0;
         double taxes = 0.0 ;
         double totalPremium = 0.0;
         double adjustedBasePremium = 0.0;
+
         String coverageType = request.getCoverageType();
 
         switch (coverageType) {
@@ -68,6 +70,7 @@ public class CalculatePremiumService {
             }
         }
 
+        dynamic = adjustedBasePremium - basePremium;
         taxes = adjustedBasePremium * 0.12;
         totalPremium = adjustedBasePremium + taxes;
 
@@ -75,6 +78,7 @@ public class CalculatePremiumService {
         response.setDeductible(request.getDeductibleValue());
         response.setCoverageLimit(request.getCoverageLimit());
         response.setPropertyValue(request.getPropertyValue());
+        response.setDynamicVal(dynamic);
         response.setTax(taxes);
 
         BigDecimal roundedPremium = BigDecimal.valueOf(totalPremium).setScale(2, RoundingMode.HALF_UP);

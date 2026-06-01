@@ -1,5 +1,6 @@
 package com.capstone.landlordInsurance.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,7 +18,7 @@ public class Premium {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long premiumId;
 
-    private Long quoteId;
+//    private Long quoteId;
     private String clientName;
     private String clientEmail;
     private String coverageType;          // e.g., "FIRE_WATER", "THEFT", etc.
@@ -28,10 +29,16 @@ public class Premium {
     private double calculatedPremium;
     private double discount;
     private double tax;
+    private double dynamicVal;
     private LocalDateTime time;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     private String status;
+
+    @OneToOne
+    @JoinColumn(name = "quote_id", nullable = false)
+    @JsonIgnore
+    private Quote quote;
 }

@@ -21,6 +21,7 @@ public class PremiumResponseDto {
     private double propertyValue;
     private double calculatedPremium;
     private double discount;
+    private double dynamicVal;
     private double tax;
     private LocalDateTime time;
     private LocalDateTime updatedAt;

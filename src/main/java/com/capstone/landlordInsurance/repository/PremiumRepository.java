@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PremiumRepository extends JpaRepository<Premium, Long> {
-    Optional<Premium> findByQuoteId(Long quoteId);
+    Optional<Premium> findByQuoteQuoteId(Long quoteId);
 
     @Modifying
-    @Query("DELETE FROM Premium p WHERE p.quoteId IN :quoteIds")
+    @Query("DELETE FROM Premium p WHERE p.quote.quoteId IN :quoteIds")
     void deleteAllByQuoteIds(@Param("quoteIds") List<Long> quoteIds);
 }

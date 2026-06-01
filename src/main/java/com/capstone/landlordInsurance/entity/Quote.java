@@ -32,7 +32,7 @@ public class Quote {
     @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'pending'")
     private String status = "pending";
 
-    private double calculatedPremium;
+//    private double calculatedPremium;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -56,6 +56,9 @@ public class Quote {
 
     @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true)
     private LossOfIncomeCov lossOfIncomeCoverage;
+
+    @OneToOne(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Premium premium;
 
 }
 
