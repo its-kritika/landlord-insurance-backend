@@ -6,7 +6,9 @@ import com.capstone.landlordInsurance.dto.PaymentVerificationDto;
 import com.capstone.landlordInsurance.service.RazorpayService;
 import com.razorpay.RazorpayException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -56,5 +58,36 @@ public class PaymentController {
             response.put("error", e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/receipt/{quoteId}")
+    public ResponseEntity<?> getReceipt(@PathVariable Long quoteId) {
+
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String brokerEmail = auth.getName();
+
+            PaymentReceiptDto paymentReceiptDto = razorpayService.getPaymentDetails(quoteId, brokerEmail);
+
+            return new ResponseEntity<>(paymentReceiptDto, HttpStatus.OK);
+        } catch (Exception e){
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", e.getMessage() != null ? e.getMessage() : "Payment Details could not be fetched! Try again later.");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+
+        }
+    }
+
+    @GetMapping("/download/{quoteId}")
+    public ResponseEntity<byte[]> downloadReceipt(@PathVariable Long quoteId) {
+
+        byte[] pdf = razorpayService.generatePaymentPdf(quoteId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=Quote_" + quoteId + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 }

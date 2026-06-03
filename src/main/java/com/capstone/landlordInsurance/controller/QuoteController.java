@@ -41,9 +41,6 @@ public class QuoteController {
     @Autowired
     private BrokerService brokerService;
 
-    @Autowired
-    private RazorpayService razorpayService;
-
     @PostMapping
     public ResponseEntity<?>  createQuote(@RequestBody QuoteRequestDto quoteRequestDTO) {
         try{
@@ -282,25 +279,6 @@ public class QuoteController {
             Map<String, Object> response = new HashMap<>();
             response.put("error", e.getMessage() != null ? e.getMessage() : "Error in fetching quote stats.");
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/receipt/{quoteId}")
-    public ResponseEntity<?> getReceipt(@PathVariable Long quoteId) {
-
-        try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String brokerEmail = auth.getName();
-
-            PaymentReceiptDto paymentReceiptDto = razorpayService.getPaymentDetails(quoteId, brokerEmail);
-
-            return new ResponseEntity<>(paymentReceiptDto, HttpStatus.OK);
-        } catch (Exception e){
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("error", e.getMessage() != null ? e.getMessage() : "Payment Details could not be fetched! Try again later.");
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-
         }
     }
 

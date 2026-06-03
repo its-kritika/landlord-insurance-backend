@@ -363,13 +363,12 @@ public class QuoteService {
         );
     }
 
+    @Transactional
     public byte[] generateQuotePdf(Long quoteId) {
 
         BaseColor primaryBlue = new BaseColor(37, 99, 235);
 
-        Quote quote = quoteRepository.findById(quoteId)
-                .orElseThrow(() ->
-                        new RuntimeException("Quote not found"));
+        Quote quote = getQuoteById(quoteId);
 
         try {
 

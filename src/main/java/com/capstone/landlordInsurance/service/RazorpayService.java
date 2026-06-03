@@ -9,6 +9,8 @@ import com.capstone.landlordInsurance.entity.Quote;
 import com.capstone.landlordInsurance.repository.BrokerRepository;
 import com.capstone.landlordInsurance.repository.PaymentRepository;
 import com.capstone.landlordInsurance.repository.QuoteRepository;
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.PdfWriter;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
@@ -20,7 +22,9 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class RazorpayService {
@@ -146,5 +150,114 @@ public class RazorpayService {
                 payment.getQuote().getQuoteId(),
                 payment.getPaymentDate()
         );
+    }
+
+    @Transactional
+    public byte[] generatePaymentPdf(Long quoteId) {
+
+        BaseColor primaryBlue = new BaseColor(37, 99, 235);
+
+        Quote quote = quoteService.getQuoteById(quoteId);
+
+        Payment payment = paymentRepository.findByQuoteQuoteIdAndPaymentStatus(quoteId, "success")
+                .orElseThrow(() -> new RuntimeException("Payment not found"));
+
+        try{
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            Document document = new Document();
+
+            PdfWriter.getInstance(document, baos);
+
+            document.open();
+
+            // Fonts
+            Font titleFont = FontFactory.getFont( FontFactory.TIMES_ROMAN, 22, primaryBlue);
+            Font sectionFont = FontFactory.getFont( FontFactory.HELVETICA_BOLD, 14);
+            Font normalFont = FontFactory.getFont( FontFactory.HELVETICA, 11);
+            Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
+
+            // Title
+            Paragraph title = new Paragraph("LANDLORD INSURANCE", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            document.add(title);
+            document.add(new Paragraph(" "));
+
+            Paragraph title2 = new Paragraph("PAYMENT RECEIPT", sectionFont);
+            title2.setAlignment(Element.ALIGN_CENTER);
+            title2.setSpacingAfter(9f);
+            document.add(title2);
+//            document.add(new Paragraph(" "));
+
+            Paragraph quoteRef = new Paragraph("Quote #" + quote.getQuoteId(), sectionFont);
+
+            quoteRef.setAlignment(Element.ALIGN_CENTER);
+            document.add(quoteRef);
+            document.add(new Paragraph(" "));
+
+            Paragraph paymentIdParagraph = new Paragraph();
+            paymentIdParagraph.add(new Chunk("Payment ID: ", boldFont));
+            paymentIdParagraph.add(new Chunk(payment.getRazorpayPaymentId(), normalFont));
+            paymentIdParagraph.setSpacingAfter(5f);
+            document.add(paymentIdParagraph);
+
+            Paragraph paragraph2 = new Paragraph();
+            paragraph2.add(new Chunk("Order ID: ", boldFont));
+            paragraph2.add(new Chunk(payment.getRazorpayOrderId(), normalFont));
+            paragraph2.setSpacingAfter(5f);
+            document.add(paragraph2);
+
+            Paragraph paragraph3 = new Paragraph();
+            paragraph3.add(new Chunk("Amount Paid: ₹", boldFont));
+            paragraph3.add(new Chunk( String.valueOf(payment.getAmount()), normalFont));
+            paragraph3.setSpacingAfter(5f);
+            document.add(paragraph3);
+
+            Paragraph paragraph4 = new Paragraph();
+            paragraph4.add(new Chunk("Payment Status: ", boldFont));
+            paragraph4.add(new Chunk( "Success", normalFont));
+            paragraph4.setSpacingAfter(5f);
+            document.add(paragraph4);
+
+            Paragraph paragraph5 = new Paragraph();
+            paragraph5.add(new Chunk("Payment Date: ", boldFont));
+            paragraph5.add(new Chunk( payment.getPaymentDate()
+                    .format(DateTimeFormatter.ofPattern("dd MMMM yyyy")), normalFont));
+            paragraph5.setSpacingAfter(5f);
+            document.add(paragraph5);
+
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph(" "));
+
+            Paragraph clientHeading = new Paragraph("CLIENT INFORMATION", sectionFont);
+            document.add(clientHeading);
+            document.add(new Paragraph(" "));
+
+            Paragraph paragraph6 = new Paragraph();
+            paragraph6.add(new Chunk("Client Name: ", boldFont));
+            paragraph6.add(new Chunk( quote.getClient().getName(), normalFont));
+            paragraph6.setSpacingAfter(5f);
+            document.add(paragraph6);
+
+            Paragraph paragraph7 = new Paragraph();
+            paragraph7.add(new Chunk("Address: ", boldFont));
+            paragraph7.add(new Chunk( quote.getClient().getAddress(), normalFont));
+            paragraph7.setSpacingAfter(5f);
+            document.add(paragraph7);
+
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph(" "));
+
+            Paragraph thankYou = new Paragraph("Thank you for choosing LandSure", boldFont);
+            thankYou.setAlignment(Element.ALIGN_CENTER);
+            document.add(thankYou);
+
+            document.close();
+
+            return baos.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating PDF", e);
+        }
     }
 }
