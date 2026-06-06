@@ -3,6 +3,9 @@ package com.capstone.landlordInsurance.controller;
 import com.capstone.landlordInsurance.dto.PaymentReceiptDto;
 import com.capstone.landlordInsurance.dto.PaymentRequestDto;
 import com.capstone.landlordInsurance.dto.PaymentVerificationDto;
+import com.capstone.landlordInsurance.entity.Quote;
+import com.capstone.landlordInsurance.service.EmailService;
+import com.capstone.landlordInsurance.service.QuoteService;
 import com.capstone.landlordInsurance.service.RazorpayService;
 import com.razorpay.RazorpayException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +26,12 @@ public class PaymentController {
 
     @Autowired
     private RazorpayService razorpayService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private QuoteService quoteService;
 
     @PostMapping("create-order")
     public ResponseEntity<?> createOrder(@RequestBody PaymentRequestDto paymentRequestDto) {
@@ -49,6 +58,67 @@ public class PaymentController {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String brokerEmail = auth.getName();
             razorpayService.verifyPayment(paymentVerificationDto, brokerEmail);
+
+            Quote quote = quoteService.getQuoteById(paymentVerificationDto.getQuoteId());
+            byte[] pdfBytes = quoteService.generateQuotePdf(quote.getQuoteId());
+
+            //Sending mail to client with attachment
+            emailService.sendEmailWithAttachment(
+                    quote.getClient().getEmail(),
+                    "LandSure: Your Landlord Insurance Policy has been Issued",
+                    "Dear " + quote.getClient().getName() + ",\n" +
+                            "\n" +
+                            "Your insurance policy has been successfully generated.\n" +
+                            "\n" +
+                            "Quote ID: " + quote.getQuoteId() +
+                            "\nCoverage: " + quote.getCoverageType() +
+                            "\nPremium: ₹" + quote.getPremium().getCalculatedPremium() + "/year" +
+
+                            "\n" +
+                            "\nPlease refer to the attached quote details below.\n" +
+                            "\n" +
+                            "Thank you,\n" +
+                            "LandSure",
+                    pdfBytes,
+                    "Quote-" +
+                            quote.getQuoteId() +
+                            ".pdf"
+            );
+
+            //Sending mail to broker with attachment
+            emailService.sendEmailWithAttachment(
+                    brokerEmail,
+                    "LandSure: Policy has been successfully generated",
+                    "Dear " + quote.getBroker().getName() + ",\n" +
+                            "\nQuote bound successfully. Below are the details attached.\n" +
+                            "\n" +
+                            "Quote ID: " + quote.getQuoteId() +
+                            "\nClient: " + quote.getClient().getName() +
+                            "\nProperty: " + quote.getPropertyAddress() +
+                            "\nPremium: ₹" + quote.getPremium().getCalculatedPremium() + "/year" +
+                            "\n" +
+                            "\nPlease refer to the attached quote details below.\n" +
+                            "\n" +
+                            "Thank you,\n" +
+                            "LandSure",
+                    pdfBytes,
+                    "Quote-" +
+                            quote.getQuoteId() +
+                            ".pdf"
+            );
+
+            //Sending mail without attachment
+//            emailService.sendEmail(
+//                    quote.getClient().getEmail(),
+//                    "LandSure: Your Landlord Insurance Policy has been Issued",
+//                    "body"
+//            );
+//
+//            emailService.sendEmail(
+//                    brokerEmail,
+//                    "LandSure: Policy has been successfully generated",
+//                    "body"
+//            );
 
             response.put("message", "Payment has been verified!");
             return new ResponseEntity<>(response, HttpStatus.OK);
@@ -86,7 +156,7 @@ public class PaymentController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=Quote_" + quoteId + ".pdf")
+                        "attachment; filename=Payment_" + quoteId + ".pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
     }
