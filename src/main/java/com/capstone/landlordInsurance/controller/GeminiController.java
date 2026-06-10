@@ -52,6 +52,22 @@ public class GeminiController {
                 );
             }
 
+            if (errorMessage != null &&
+                    (errorMessage.contains("503")
+                    || errorMessage.contains("UNAVAILABLE")
+                    || errorMessage.contains("high demand"))) {
+
+                response.put(
+                        "error",
+                        "AI service is currently busy. Please try again in a few minutes."
+                );
+
+                return new ResponseEntity<>(
+                        response,
+                        HttpStatus.SERVICE_UNAVAILABLE
+                );
+            }
+
             response.put(
                     "error",
                     "Something went wrong while generating a response."
