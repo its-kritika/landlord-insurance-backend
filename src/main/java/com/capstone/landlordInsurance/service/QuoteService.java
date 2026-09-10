@@ -11,6 +11,7 @@ import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import jakarta.annotation.Nonnull;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 
+@Slf4j
 @Service
 public class QuoteService {
 
@@ -50,6 +52,9 @@ public class QuoteService {
 
     @Autowired
     private PremiumRepository premiumRepository;
+
+    @Autowired
+    private RedisService redisService;
 
     @Transactional
     public PremiumResponseDto createQuote(QuoteRequestDto quoteRequestDTO, String brokerEmail) {
@@ -170,8 +175,21 @@ public class QuoteService {
         return quoteRepository.findByBroker_BrokerId(brokerId);
     }
 
+    @Transactional
     public Quote getQuoteById(Long id) {
-        return quoteRepository.findById(id).orElse(null);
+        String redisKey = "quote:" + id;
+        Quote cachedQuote = redisService.get(redisKey, Quote.class);
+
+        if (cachedQuote != null){
+//            System.out.println("redis hit");
+            return cachedQuote;
+        }
+        Quote quote = quoteRepository.findById(id).orElse(null);
+        if (quote != null){
+//            System.out.println("redis miss");
+            redisService.set(redisKey, quote, 3600l);
+        }
+        return quote;
     }
 
     @Transactional
